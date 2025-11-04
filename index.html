@@ -29,6 +29,54 @@ function rssiToScore(rssi) {
   return Math.max(0, Math.min(100, score));
 }
 
+// --- Audio setup ---
+let audioCtx;
+let beepInterval;
+let lastScore = 0;
+
+function initAudio() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+}
+
+// Play one short beep
+function playBeep(frequency = 440) {
+  initAudio();
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+
+  osc.frequency.value = frequency; 
+  gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.15);
+
+  osc.connect(gain);
+  gain.connect(audioCtx.destination);
+
+  osc.start();
+  osc.stop(audioCtx.currentTime + 0.15);
+}
+
+// Converts proximity score to beep speed + pitch
+function updateBeeping(score) {
+  // Only restart interval if score changed enough
+  if (Math.abs(score - lastScore) < 3) return;
+  lastScore = score;
+
+  // Stop any existing beeping
+  if (beepInterval) clearInterval(beepInterval);
+
+  // Determine beep frequency & speed based on score (0-100)
+  let minDelay = 150;   // fastest beep
+  let maxDelay = 1200;  // slowest beep
+  let delay = maxDelay - (score / 100) * (maxDelay - minDelay);
+
+  // Frequency rises with closeness (metal detector effect)
+  let frequency = 200 + score * 6;  // 200Hz → 800Hz approx
+
+  // Restart interval with new speed
+  beepInterval = setInterval(() => playBeep(frequency), delay);
+}
+
+
 async function start() {
   try {
     document.getElementById("status").innerText = "Searching for device...";
@@ -45,12 +93,15 @@ async function start() {
     document.getElementById("status").innerText = "Receiving RSSI...";
 
     device.addEventListener("advertisementreceived", e => {
-      const rssi = e.rssi;
-      const score = rssiToScore(rssi);
+        const rssi = e.rssi;
+        const score = rssiToScore(rssi);
 
-      document.getElementById("rssi").innerText = `RSSI: ${rssi} dBm`;
-      document.getElementById("score").innerText = `Proximity Score: ${score}`;
+        document.getElementById("rssi").innerText = `RSSI: ${rssi} dBm`;
+        document.getElementById("score").innerText = `Proximity Score: ${score}`;
+
+        updateBeeping(score);
     });
+
 
   } catch (err) {
     document.getElementById("status").innerText = "Error";
