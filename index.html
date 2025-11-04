@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BLE RSSI Test</title>
+<style>
+  body { font-family: sans-serif; padding: 20px; }
+  button { font-size: 18px; padding: 15px 20px; }
+  #status { margin-top: 20px; font-size: 18px; }
+  #rssi { font-size: 24px; margin-top: 10px; }
+  #score { font-size: 24px; margin-top: 5px; color: #333; }
+</style>
+</head>
+<body>
+
+<h2>BLE RSSI Test</h2>
+<button onclick="start()">Start Tracking "test"</button>
+
+<div id="status">Not connected</div>
+<div id="rssi"></div>
+<div id="score"></div>
+
+<script>
+let device;
+const targetName = "test";
+
+function rssiToScore(rssi) {
+  const score = Math.round(((rssi + 100) / 60) * 100);
+  return Math.max(0, Math.min(100, score));
+}
+
+async function start() {
+  try {
+    document.getElementById("status").innerText = "Searching for device...";
+
+    device = await navigator.bluetooth.requestDevice({
+      filters: [{ name: targetName }],
+      optionalServices: ['battery_service']
+    });
+
+    document.getElementById("status").innerText = "Connecting...";
+    const server = await device.gatt.connect();
+
+    await device.watchAdvertisements();
+    document.getElementById("status").innerText = "Receiving RSSI...";
+
+    device.addEventListener("advertisementreceived", e => {
+      const rssi = e.rssi;
+      const score = rssiToScore(rssi);
+
+      document.getElementById("rssi").innerText = `RSSI: ${rssi} dBm`;
+      document.getElementById("score").innerText = `Proximity Score: ${score}`;
+    });
+
+  } catch (err) {
+    document.getElementById("status").innerText = "Error";
+    console.error(err);
+    alert(err);
+  }
+}
+</script>
+
+</body>
+</html>
