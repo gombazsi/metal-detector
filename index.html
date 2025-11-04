@@ -119,11 +119,6 @@
       width: 100%;
     }
 
-    #startSearch {
-      margin: auto;
-      margin-bottom: 20px;
-    }
-
     button {
       margin: auto;
       font-size: 22px;
@@ -149,6 +144,7 @@
 
   <h2>Fémdetektor</h2>
   <button id="copyFlags" onclick="copyFlags()">DETEKTOR BEKAPCSOLÁSA</button>
+  <button id="startSearch" onclick="start()">KERESÉS INDÍTÁSA</button>
 
   <div id="radar">
     <div class="circle">
@@ -161,7 +157,6 @@
     <div id="signalFill"></div>
   </div>
   <div id="strengthText">Jelerősség: 0%</div>
-  <button id="startSearch" onclick="start()">KERESÉS INDÍTÁSA</button>
 
   <script>
     let device;
